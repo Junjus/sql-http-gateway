@@ -23,15 +23,18 @@ services:
       - ./queries:/app/queries:ro
     depends_on:
       - db
+    environment:
+      DB_TYPE: pgx
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: sqltojson
+      DB_USER: sqltojson
+      DB_PASSWORD: sqltojson
     command:
       - -addr
       - :8080
       - -sql-dir
       - /app/queries
-      - -driver
-      - pgx
-      - -dsn
-      - postgres://sqltojson:sqltojson@db:5432/sqltojson?sslmode=disable
     ports:
       - "8080:8080"
 

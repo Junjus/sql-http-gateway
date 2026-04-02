@@ -30,23 +30,30 @@ func main() {
 	var (
 		addr     = flag.String("addr", ":8080", "HTTP listen address")
 		sqlDir   = flag.String("sql-dir", "./queries", "Directory containing .sql files")
-		driver   = flag.String("driver", "", "database/sql driver name (e.g. postgres, mysql, sqlite3)")
-		dsn      = flag.String("dsn", "", "Database connection string")
 		timeout  = flag.Duration("query-timeout", 10*time.Second, "Per-query timeout")
 		pingWait = flag.Duration("ping-timeout", 5*time.Second, "Database ping timeout")
 	)
 	flag.Parse()
 
-	if strings.TrimSpace(*driver) == "" || strings.TrimSpace(*dsn) == "" {
-		log.Fatal("both -driver and -dsn are required")
+	dbType := getEnv("DB_TYPE", "pgx")
+	dbHost := getEnv("DB_HOST", "")
+	dbPort := getEnv("DB_PORT", "5432")
+	dbName := getEnv("DB_NAME", "")
+	dbUser := getEnv("DB_USER", "")
+	dbPassword := getEnv("DB_PASSWORD", "")
+
+	if dbHost == "" || dbName == "" || dbUser == "" || dbPassword == "" {
+		log.Fatalf("missing required database environment variables: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD")
 	}
+
+	dsn := buildPostgresConnectionString(dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	queryMap, err := loadQueries(*sqlDir)
 	if err != nil {
 		log.Fatalf("failed to load queries: %v", err)
 	}
 
-	db, err := sql.Open(*driver, *dsn)
+	db, err := sql.Open(dbType, dsn)
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
@@ -260,4 +267,15 @@ func waitForDatabase(db *sql.DB, timeout time.Duration) error {
 
 		time.Sleep(500 * time.Millisecond)
 	}
+}
+
+func getEnv(key, defaultVal string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+	return defaultVal
+}
+
+func buildPostgresConnectionString(user, password, host, port, dbname string) string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
 }

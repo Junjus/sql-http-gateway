@@ -27,12 +27,26 @@ Important: Go's standard library includes `database/sql` but does not include co
 
 ## Run
 
+Set the following environment variables and then run the application:
+
 ```bash
-go run . \
-  -driver postgres \
-  -dsn "postgres://user:password@localhost:5432/mydb?sslmode=disable" \
-  -sql-dir ./queries \
-  -addr :8080
+export DB_TYPE=pgx
+export DB_HOST=localhost
+export DB_PORT=5432
+export DB_NAME=mydb
+export DB_USER=user
+export DB_PASSWORD=password
+
+go run .
+```
+
+Or with flags (flags override environment variables):
+
+```bash
+DB_HOST=localhost DB_PORT=5432 DB_NAME=mydb DB_USER=user DB_PASSWORD=password \
+  go run . \
+  -addr :8080 \
+  -sql-dir ./queries
 ```
 
 ## Docker
@@ -48,7 +62,7 @@ This starts:
 - `db`: a PostgreSQL test database
 - `app`: the Go service on `http://localhost:8080`
 
-The compose file initializes the database from `db/init/*.sql`, seeds sample data, mounts `./queries` into the app container, and points the app at the test database with the `pgx` driver.
+The compose file initializes the database from `db/init/*.sql`, seeds sample data, mounts `./queries` into the app container, and passes database connection details via environment variables. You can override these in the compose file or via a `.env` file for local testing.
 
 If you want to re-run the seed scripts from scratch, remove the database volume first:
 
@@ -58,12 +72,19 @@ docker compose -f compose.yaml down -v
 
 Flags:
 
-- `-driver`: required, database/sql driver name.
-- `-dsn`: required, database connection string.
-- `-sql-dir`: directory with `.sql` files (default `./queries`).
 - `-addr`: HTTP bind address (default `:8080`).
+- `-sql-dir`: directory with `.sql` files (default `./queries`).
 - `-query-timeout`: timeout per query (default `10s`).
 - `-ping-timeout`: timeout for startup DB ping (default `5s`).
+
+Environment Variables:
+
+- `DB_TYPE`: database/sql driver name (default `pgx`).
+- `DB_HOST`: required, database hostname.
+- `DB_PORT`: database port (default `5432`).
+- `DB_NAME`: required, database name.
+- `DB_USER`: required, database username.
+- `DB_PASSWORD`: required, database password.
 
 ## Endpoints
 
