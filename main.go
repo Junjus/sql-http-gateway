@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -277,5 +278,14 @@ func getEnv(key, defaultVal string) string {
 }
 
 func buildPostgresConnectionString(user, password, host, port, dbname string) string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
+	u := &url.URL{
+		Scheme: "postgres",
+		Host:   host + ":" + port,
+		Path:   "/" + dbname,
+		RawQuery: url.Values{
+			"sslmode": []string{"disable"},
+		}.Encode(),
+	}
+	u.User = url.UserPassword(user, password)
+	return u.String()
 }
